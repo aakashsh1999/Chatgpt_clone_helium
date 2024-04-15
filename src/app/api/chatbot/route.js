@@ -6,7 +6,7 @@ export async function POST(request) {
   let apiResponse;
 
   const openai = new OpenAI({
-    apiKey: "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",
+    apiKey: process.env.OPEN_AI_KEY,
   });
   const { userId } = auth()
   const body = await request.json();
