@@ -1,50 +1,59 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import UserPrompt from "../components/Chat/UserPrompt";
-import SystemPrompt from "../components/Chat/SystemPrompt";
+import UserPrompt from "../../../components/Chat/UserPrompt";
+import SystemPrompt from "../../../components/Chat/SystemPrompt";
 import { RefreshCcwIcon, RefreshCwIcon, ArrowUpIcon } from "lucide-react";
-import { useChatContext } from "../contexts/ChatContext";
-import { Sidebar } from "./Sidebar/sidebar";
+import { useChatContext } from "../../../contexts/ChatContext";
+import { Sidebar } from "../../Sidebar/sidebar";
 import { useAuth } from "@clerk/nextjs";
-import Loading from "../Common/Loader/Loader";
-import { useRouter } from "next/navigation";
+import Loading from "../../../Common/Loader/Loader";
 
 
-function Home() {
-  const [chatHistoryId, setChatHistoryId] = useState(null);
+function page({params}) {
 
-  useEffect(() => {
-    // Fetch chatHistoryId from localStorage when the component mounts
-    const storedChatHistoryId = localStorage.getItem('chatHistoryId');
-    if (storedChatHistoryId) {
-      setChatHistoryId(storedChatHistoryId);
-    }
-  }, []); // Empty dependency array ensures this effect runs only once on mount
-
-  const { chatLog, setChatLog, isButtonVisible, isPrinting, setIsPrinting, user } =
+  const { chatLog, setChatLog, isButtonVisible, isPrinting, setIsPrinting } =
     useChatContext();
   const data = useAuth()
   const [inputPrompt, setInputPrompt] = useState("");
   const [err, setErr] = useState(false);
   const [responseFromAPI, setReponseFromAPI] = useState(false);
+  const [loading, setLoading] = useState(false)
   const [chatList, setChatList] = useState([])
+ 
+  useEffect(() => {
+    getChatList()
+  }, []);
+  function getChatList() {
+    setLoading(true)
+    fetch(`/api/chatlistbyhistory?chatHistoryId=${params.slug}`)
+      .then(response => {
+        if (!response.ok) {
+          setLoading(false)
+          throw new Error('Network response was not ok');
+        }
+        return response.json(); // Parse the JSON response
+      })
+      .then(data => {
+        setLoading(false)
+        setChatList([...data.data])
 
+        // Handle the fetched data here (e.g., update UI)
+      })
+      .catch(error => {
+        setLoading(false)
+        console.error('Error fetching chats:', error); // Log any errors
+        // Handle errors here (e.g., display error message)
+      })
+    };
   const chatLogRef = useRef(null);
   const stopPrinting = () => setIsPrinting(!isPrinting);
-
-  const [loading, setLoading] = useState(false)
-
-  const router = useRouter()
-
-  useEffect(() =>{
-    if(!user){
-      router.push('/signin')
-    }
-  })
 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+
 
     if (!responseFromAPI) {
       if (inputPrompt.trim() !== "") {
@@ -52,17 +61,18 @@ function Home() {
         setReponseFromAPI(true);
         setChatList([...chatList, { prompt: inputPrompt }]);
         callAPI();
-    }
-  
+      
+
+      }
+
       async function callAPI() {
-        
         try {
           const response = await (await fetch(
             "/api/chatbot", {
             method: "POST",
             body: JSON.stringify({
               inputPrompt,
-              chatHistoryId:chatHistoryId
+              chatHistoryId:params.slug
             })
           }
           )).json()
@@ -75,7 +85,6 @@ function Home() {
                 result: response?.botResponse,
               },
             ]);
-            localStorage.setItem("chatHistoryId", response.chatHistoryId)
             setInputPrompt("");
             setErr(false);
           }
@@ -111,18 +120,9 @@ function Home() {
 
         }}
       >
-        {chatList.length <=0 && <div className="flex justify-between flex-col lg:max-w-2xl mx-auto ">
-              <div className="mx-auto py-24 sm:pt-96">
-                <div className="text-center">
-                  <span className="text-2xl font-bold tracking-tight text-white ">
-                   How Can I help you?
-                  </span>
-                </div>
-                </div>
-              </div>}
         <form onSubmit={handleSubmit}>
           <div className="relative pt-1p  mx-auto max-w-3xl">
-          {loading &&<div className="w-full h-screen flex justify-center
+            {loading &&<div className="w-full h-screen flex justify-center
             items-center"> <Loading/> </div>}
             {chatList.length > 0 && (
               <div className="chatLogWrapper scrollbar-hide">
@@ -178,4 +178,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default page;

@@ -31,3 +31,23 @@ body {
     text-wrap: balance;
   }
 }
+
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* For IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.chatLogWrapper {
+  height: 90vh;
+  overflow-y: auto;
+}
+
+.filters{
+  z-index: 10;
+}
